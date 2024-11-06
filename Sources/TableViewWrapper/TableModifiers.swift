@@ -6,11 +6,25 @@
 //
 
 import Foundation
+import UIKit
 
 extension TableView {
-    public func onSelect(_ action: @escaping (Data.Element.Element) -> Void) -> TableView {
+    public func onSelect(_ action: @escaping ElementAction) -> TableView {
         var view = self
         view.selectItemAction = action
         return view
     }
+    
+    public func trailingSwipeActions(_ actions: [SwipeAction]) -> TableView {
+        var view = self
+        view.trailingSwipeActions = actions
+        return view
+    }
+    
+    public func leadingSwipeActions(_ actions: [SwipeAction]) -> TableView {
+        var view = self
+        view.leadingSwipeActions = actions
+        return view
+    }
 }
+

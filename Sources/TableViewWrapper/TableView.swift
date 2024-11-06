@@ -13,8 +13,8 @@ public struct TableView<Data,
                         TableFooterContent,
                         SectionHeaderContent,
                         SectionFooterContent>: UIViewControllerRepresentable
-where Data: RandomAccessCollection,
-      Data.Element: RandomAccessCollection,
+where Data: RandomAccessCollection & RangeReplaceableCollection,
+      Data.Element: RandomAccessCollection & RangeReplaceableCollection,
       Data.Index == Int,
       Data.Element.Index == Int,
       CellContent: View,
@@ -35,7 +35,8 @@ where Data: RandomAccessCollection,
     public let sectionHeader: (Int) -> SectionHeaderContent
     public let sectionFooter: (Int) -> SectionFooterContent
     public var selectItemAction: ElementAction? = nil
-    
+    public var trailingSwipeActions: [SwipeAction]?
+    public var leadingSwipeActions: [SwipeAction]?
     
     public func makeUIViewController(context: Context) -> UITableViewController {
         let controller = UITableViewController()
@@ -84,11 +85,16 @@ where Data: RandomAccessCollection,
     }
 
     public func updateUIViewController(_ uiViewController: UITableViewController, context: Context) {
-        uiViewController.tableView.reloadData()
+        context.coordinator.data = data
+        if let oldCount = context.coordinator.oldData.flatMap({ $0 })?.count {
+            if oldCount <= data.flatMap({ $0 }).count {
+                uiViewController.tableView.reloadData()
+            }
+        }
     }
     
     public func makeCoordinator() -> Coordinator {
-        Coordinator(view: self)
+        Coordinator(view: self, data: data)
     }
     
     public init(data: Data,
