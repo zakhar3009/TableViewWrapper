@@ -28,21 +28,37 @@ where Data: RandomAccessCollection & RangeReplaceableCollection,
     public typealias RowData = Section.Element
     public typealias ElementAction = (Data.Element.Element) -> Void
     
-    public let data: Data
+    @Binding var data: Data
+    public var isEditing: Binding<Bool>?
     public let cellContentForData: (RowData) -> CellContent
+    public let scrollEnabled: Bool
+    public let bounces: Bool
+    public let decelerationRate: UIScrollView.DecelerationRate
+    public let seperatorStyle: UITableViewCell.SeparatorStyle
     public let header: TableHeaderContent?
     public let footer: TableFooterContent?
-    public let sectionHeader: (Int) -> SectionHeaderContent
-    public let sectionFooter: (Int) -> SectionFooterContent
-    public var selectItemAction: ElementAction? = nil
+    public let sectionHeader: (Int) -> SectionHeaderContent?
+    public let sectionFooter: (Int) -> SectionFooterContent?
+    public var selectItemAction: ElementAction?
     public var trailingSwipeActions: [SwipeAction]?
     public var leadingSwipeActions: [SwipeAction]?
+    public var canMoveRowAt: ((IndexPath) -> Bool)?
+    public var onReorder: (() -> Void)?
+    public var didScroll: ((_ offset: CGFloat) -> ())?
+    public var didScrollToTop: (() -> Void)?
+    public var beginDragging: (() -> Void)?
+    public var endDraging: ((_ willDecelerate: Bool) -> Void)?
     
     public func makeUIViewController(context: Context) -> UITableViewController {
         let controller = UITableViewController()
         controller.tableView.register(TableViewCell.self, forCellReuseIdentifier: Constans.cellReuseIdentifier)
         controller.tableView.dataSource = context.coordinator
         controller.tableView.delegate = context.coordinator
+        controller.tableView.bounces = bounces
+        controller.tableView.decelerationRate = decelerationRate
+        controller.tableView.isScrollEnabled = scrollEnabled
+        controller.tableView.separatorStyle = seperatorStyle
+        controller.tableView.dragInteractionEnabled = true
         setupHeader(for: controller)
         setupFooter(for: controller)
         return controller
@@ -85,27 +101,41 @@ where Data: RandomAccessCollection & RangeReplaceableCollection,
     }
 
     public func updateUIViewController(_ uiViewController: UITableViewController, context: Context) {
-        context.coordinator.data = data
-        if let oldCount = context.coordinator.oldData.flatMap({ $0 })?.count {
+        if let isEditing {
+            uiViewController.tableView.setEditing(isEditing.wrappedValue, animated: true)
+        }
+        if let oldCount = context.coordinator.oldData?.flatMap({ $0 }).count {
             if oldCount <= data.flatMap({ $0 }).count {
-                uiViewController.tableView.reloadData()
+                DispatchQueue.main.async {
+                    uiViewController.tableView.reloadData()
+                }
             }
         }
     }
     
     public func makeCoordinator() -> Coordinator {
-        Coordinator(view: self, data: data)
+        Coordinator(view: self, data: $data)
     }
     
-    public init(data: Data,
+    public init(data: Binding<Data>,
                 @ViewBuilder cellContentForData: @escaping (RowData) -> CellContent,
+                isEditing: Binding<Bool>? = nil,
+                bounces: Bool = true,
+                decelerationRate: UIScrollView.DecelerationRate = .normal,
+                seperatorStyle: UITableViewCell.SeparatorStyle = .singleLine,
+                scrollEnabled: Bool = true,
                 @ViewBuilder header: @escaping () -> TableHeaderContent = { EmptyView() },
                 @ViewBuilder footer: @escaping () -> TableFooterContent = { EmptyView() },
                 @ViewBuilder sectionHeader: @escaping (Int) -> SectionHeaderContent = { _ in EmptyView() },
                 @ViewBuilder sectionFooter: @escaping (Int) -> SectionFooterContent = { _ in EmptyView() }
     ) {
-        self.data = data
+        self._data = data
         self.cellContentForData = cellContentForData
+        self.isEditing = isEditing
+        self.bounces = bounces
+        self.decelerationRate = decelerationRate
+        self.scrollEnabled = scrollEnabled
+        self.seperatorStyle = seperatorStyle
         self.header = (header() is EmptyView) ? nil : header()
         self.footer = (footer() is EmptyView) ? nil : footer()
         self.sectionHeader = sectionHeader

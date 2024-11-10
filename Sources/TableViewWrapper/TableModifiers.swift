@@ -26,5 +26,41 @@ extension TableView {
         view.leadingSwipeActions = actions
         return view
     }
+    
+    public func canMoveRowAt(_ action: @escaping (IndexPath) -> Bool) -> TableView {
+        var view = self
+        view.canMoveRowAt = action
+        return view
+    }
+    
+    public func onReorder(_ action: @escaping () -> Void) -> TableView {
+        var view = self
+        view.onReorder = action
+        return view
+    }
+    
+    public func didScroll(_ action: @escaping (CGFloat) -> ()) -> TableView {
+        var view = self
+        view.didScroll = action
+        return view
+    }
+    
+    public func didScrollToTop(_ action: @escaping () -> Void) -> TableView {
+        var view = self
+        view.didScrollToTop = action
+        return view
+    }
+    
+    public func beginDragging(_ action: @escaping () -> Void) -> TableView {
+        var view = self
+        view.beginDragging = action
+        return view
+    }
+    
+    public func endDragging(_ action: @escaping (_ willDecelerate: Bool) -> Void) -> TableView {
+        var view = self
+        view.endDraging = action
+        return view
+    }
 }
 

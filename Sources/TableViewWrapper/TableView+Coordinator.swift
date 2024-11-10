@@ -9,18 +9,18 @@ import Foundation
 import SwiftUI
 
 extension TableView {
-    public class Coordinator: NSObject, UITableViewDataSource, UITableViewDelegate {
+    public class Coordinator: NSObject, UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate {
         let view: TableView
         var oldData: Data?
-        var data: Data {
+        @Binding var data: Data {
             didSet {
-                oldData = oldValue
+                self.oldData = oldValue
             }
         }
         
-        init(view: TableView, data: Data) {
+        init(view: TableView, data: Binding<Data>) {
             self.view = view
-            self.data = data
+            self._data = data
         }
         
         public func numberOfSections(in tableView: UITableView) -> Int {
@@ -64,8 +64,7 @@ extension TableView {
         }
         
         public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-            let cell = tableView.dequeueReusableCell(withIdentifier: Constans.cellReuseIdentifier,
-                                                     for: indexPath) as! TableViewCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: Constans.cellReuseIdentifier,  for: indexPath) as! TableViewCell
             let data = data[indexPath.section][indexPath.row]
             let content = view.cellContentForData(data)
             cell.configure(with: content)
@@ -73,28 +72,16 @@ extension TableView {
         }
         
         public func deleteRow(at indexPath: IndexPath, in tableView: UITableView) {
-            print("Delete row")
-            tableView.deleteRows(at: [indexPath], with: .top)
+            tableView.deleteRows(at: [indexPath], with: .automatic)
         }
         
         public func tableView(_ tableView: UITableView, leadingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
             if let leadingSwipeActions = view.leadingSwipeActions {
                 let actions = leadingSwipeActions.map { actionConfig in
-                    let action = UIContextualAction(style: actionConfig.style, title: actionConfig.title) { (contextualAction, view, completionHandler) in
-                        if actionConfig.style == .destructive {
-                            actionConfig.handler(indexPath)
-                            self.removeItem(at: indexPath)
-                            self.deleteRow(at: indexPath, in: tableView)
-                        } else {
-                            actionConfig.handler(indexPath)
-                        }
-                        completionHandler(true)
+                    return UIContextualAction(actionConfig, indexPath: indexPath) {
+                        self.removeDataItem(at: indexPath)
+                        self.deleteRow(at: indexPath, in: tableView)
                     }
-                    action.image = actionConfig.icon
-                    if let color = actionConfig.background {
-                        action.backgroundColor = color
-                    }
-                    return action
                 }
                 return UISwipeActionsConfiguration(actions: actions)
             }
@@ -104,32 +91,78 @@ extension TableView {
         public func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
             if let trailingSwipeActions = view.trailingSwipeActions {
                 let actions = trailingSwipeActions.map { actionConfig in
-                    let action = UIContextualAction(style: actionConfig.style, title: actionConfig.title) { (contextualAction, view, completionHandler) in
-                        if actionConfig.style == .destructive {
-                            actionConfig.handler(indexPath)
-                            self.removeItem(at: indexPath)
-                            self.deleteRow(at: indexPath, in: tableView)
-                        } else {
-                            actionConfig.handler(indexPath)
-                        }
-                        completionHandler(true)
+                    return UIContextualAction(actionConfig, indexPath: indexPath) {
+                        self.removeDataItem(at: indexPath)
+                        self.deleteRow(at: indexPath, in: tableView)
                     }
-                    action.image = actionConfig.icon
-                    if let color = actionConfig.background {
-                        action.backgroundColor = color
-                    }
-                    return action
                 }
                 return UISwipeActionsConfiguration(actions: actions)
             }
             return nil
         }
+
+        public func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            if let action = view.didScroll {
+                action(scrollView.contentOffset.y)
+            }
+        }
         
-        func removeItem(at indexPath: IndexPath) {
+        public func scrollViewDidScrollToTop(_ scrollView: UIScrollView) {
+            if let action = view.didScrollToTop {
+                action()
+            }
+        }
+        
+        public func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+            if let action = view.beginDragging {
+                action()
+            }
+        }
+        
+        public func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+            if let action = view.endDraging {
+                action(decelerate)
+            }
+        }
+        
+        public func tableView(_ tableView: UITableView, editingStyleForRowAt indexPath: IndexPath) -> UITableViewCell.EditingStyle {
+            return .none
+        }
+        
+        public func tableView(_ tableView: UITableView, shouldIndentWhileEditingRowAt indexPath: IndexPath) -> Bool {
+            return false
+        }
+        
+        public func tableView(_ tableView: UITableView, moveRowAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
+            moveDataItem(from: sourceIndexPath, at: destinationIndexPath)
+            if let onReorder = view.onReorder {
+                onReorder()
+            }
+        }
+        
+        public func tableView(_ tableView: UITableView, canMoveRowAt indexPath: IndexPath) -> Bool {
+            if let canMoveRowAt = view.canMoveRowAt {
+                return canMoveRowAt(indexPath)
+            }
+            return true
+        }
+                
+        func removeDataItem(at indexPath: IndexPath) {
             var modifiedData = Array(data)
             var section = Array(modifiedData[indexPath.section])
             section.remove(at: indexPath.row)
             modifiedData[indexPath.section] = Section(section)
+            data = Data(modifiedData)
+        }
+        
+        func moveDataItem(from source: IndexPath, at destination: IndexPath) {
+            var modifiedData = Array(data)
+            var sourceSection = Array(modifiedData[source.section])
+            let item = sourceSection.remove(at: source.row)
+            modifiedData[source.section] = Section(sourceSection)
+            var destinationSection = Array(modifiedData[destination.section])
+            destinationSection.insert(item, at: destination.row)
+            modifiedData[destination.section] = Section(destinationSection)
             data = Data(modifiedData)
         }
     }
