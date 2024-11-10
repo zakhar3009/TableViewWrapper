@@ -6,6 +6,31 @@
 //
 
 import SwiftUI
+/// A custom `TableView` wrapper that integrates SwiftUI views into a UIKit `UITableView`.
+/// This struct provides a SwiftUI-friendly interface for managing UITableView behaviors like selection, swipe actions, reordering, and more.
+///
+/// - Parameters:
+///   - Data: A collection of sections, where each section contains a collection of rows.
+///   - CellContent: The content view displayed for each row.
+///   - TableHeaderContent: The content view displayed in the table header.
+///   - TableFooterContent: The content view displayed in the table footer.
+///   - SectionHeaderContent: The content view displayed for each section header.
+///   - SectionFooterContent: The content view displayed for each section footer.
+///
+/// - Note:
+///   This component uses UIKit's `UITableViewController` for underlying table management and allows integrating SwiftUI components within it.
+///
+/// Example usage:
+/// ```
+/// TableView(
+///     data: $data,
+///     cellContentForData: { item in
+///         Text(item.name)
+///     },
+///     header: { Text("Table Header") },
+///     footer: { Text("Table Footer") }
+/// )
+/// ```
 
 public struct TableView<Data,
                         CellContent,
@@ -23,32 +48,75 @@ where Data: RandomAccessCollection & RangeReplaceableCollection,
       SectionHeaderContent: View,
       SectionFooterContent: View {
     
+    // MARK: CollectionView typealiases
     public typealias UIViewControllerType = UITableViewController
     public typealias Section = Data.Element
     public typealias RowData = Section.Element
     public typealias ElementAction = (Data.Element.Element) -> Void
     
+    /// A binding to the data source of the table view.
     @Binding var data: Data
+    
+    /// A binding to control whether the table view is in editing mode.
     public var isEditing: Binding<Bool>?
+    
+    /// A closure that generates the content view for each cell based on row data.
     public let cellContentForData: (RowData) -> CellContent
+    
+    /// A boolean that controls whether scrolling is enabled.
     public let scrollEnabled: Bool
+    
+    /// A boolean that controls whether the table view bounces at the edges.
     public let bounces: Bool
+    
+    /// The rate at which the table view decelerates when scrolling.
     public let decelerationRate: UIScrollView.DecelerationRate
+    
+    /// The separator style for the table view cells.
     public let seperatorStyle: UITableViewCell.SeparatorStyle
+    
+    /// The content view displayed in the table header.
     public let header: TableHeaderContent?
+    
+    /// The content view displayed in the table footer.
     public let footer: TableFooterContent?
+    
+    /// A closure that generates the content for each section header.
     public let sectionHeader: (Int) -> SectionHeaderContent?
+    
+    /// A closure that generates the content for each section footer.
     public let sectionFooter: (Int) -> SectionFooterContent?
+    
+    /// An optional action triggered when a table item is selected.
     public var selectItemAction: ElementAction?
+    
+    /// An array of swipe actions to be displayed when swiping right.
     public var trailingSwipeActions: [SwipeAction]?
+    
+    /// An array of swipe actions to be displayed when swiping left.
     public var leadingSwipeActions: [SwipeAction]?
+    
+    /// A closure that determines if a row can be moved (reordered).
     public var canMoveRowAt: ((IndexPath) -> Bool)?
+    
+    /// A closure to handle reordering actions.
     public var onReorder: (() -> Void)?
+    
+    /// A closure that is called when the table view is scrolled.
     public var didScroll: ((_ offset: CGFloat) -> ())?
+    
+    /// A closure that is called when the table view reaches the top.
     public var didScrollToTop: (() -> Void)?
+    
+    /// A closure that is called when the table view starts dragging.
     public var beginDragging: (() -> Void)?
+    
+    /// A closure that is called when the table view ends dragging.
     public var endDraging: ((_ willDecelerate: Bool) -> Void)?
     
+    // MARK: - TableView Lifecycle
+    
+    /// Creates and configures the underlying UITableViewController.
     public func makeUIViewController(context: Context) -> UITableViewController {
         let controller = UITableViewController()
         controller.tableView.register(TableViewCell.self, forCellReuseIdentifier: Constans.cellReuseIdentifier)
@@ -64,6 +132,7 @@ where Data: RandomAccessCollection & RangeReplaceableCollection,
         return controller
     }
     
+    /// Configures the header for the table view.
     private func setupHeader(for tableViewController: UITableViewController) {
         if let headerView = header {
             let hostingController = UIHostingController(rootView: headerView)
@@ -82,6 +151,7 @@ where Data: RandomAccessCollection & RangeReplaceableCollection,
         }
     }
     
+    /// Configures the footer for the table view.
     private func setupFooter(for tableViewController: UITableViewController) {
         if let footerView = footer {
             let hostingController = UIHostingController(rootView: footerView)
@@ -100,6 +170,7 @@ where Data: RandomAccessCollection & RangeReplaceableCollection,
         }
     }
 
+    /// Updates the `UITableViewController` when the data changes.
     public func updateUIViewController(_ uiViewController: UITableViewController, context: Context) {
         if let isEditing {
             uiViewController.tableView.setEditing(isEditing.wrappedValue, animated: true)
@@ -113,10 +184,14 @@ where Data: RandomAccessCollection & RangeReplaceableCollection,
         }
     }
     
+    /// Creates the coordinator to manage the data binding and interactions.
     public func makeCoordinator() -> Coordinator {
         Coordinator(view: self, data: $data)
     }
     
+    // MARK: - Initializer
+        
+    /// Initializes the `TableView` with the provided parameters.
     public init(data: Binding<Data>,
                 @ViewBuilder cellContentForData: @escaping (RowData) -> CellContent,
                 isEditing: Binding<Bool>? = nil,
