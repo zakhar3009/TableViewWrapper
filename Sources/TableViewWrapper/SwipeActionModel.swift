@@ -13,26 +13,19 @@ import SwiftUI
 ///
 /// This is typically used with the `UISwipeActionsConfiguration` to add contextual actions to table view rows.
 public struct SwipeAction {
-    
     /// The title of the swipe action.
     let title: String
-    
     /// The style of the swipe action (e.g., `.destructive`, `.normal`).
     let style: UIContextualAction.Style
-    
     /// An optional icon for the swipe action.
     let icon: UIImage?
-    
     /// An optional background color for the swipe action button.
     let background: UIColor?
-    
     /// The animation to use when deleting the row (if applicable).
     let deleteAnimation: UITableView.RowAnimation
-    
     /// The closure to be executed when the swipe action is triggered.
     /// It provides the `IndexPath` of the row where the action was triggered.
     let handler: (IndexPath) -> Void
-    
     /// Initializes a new swipe action.
     /// - Parameters:
     ///   - title: The title of the swipe action.

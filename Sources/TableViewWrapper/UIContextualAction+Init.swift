@@ -8,7 +8,6 @@
 import UIKit
 
 extension UIContextualAction {
-    
     /// A convenience initializer for creating a `UIContextualAction` using a `SwipeAction` configuration.
     ///
     /// This initializer simplifies the creation of contextual actions used in swipe gestures within table views.
@@ -21,11 +20,8 @@ extension UIContextualAction {
     ///
     /// This initializer also handles triggering the associated handler of the `SwipeAction` and completing the action.
     convenience init(_ actionConfig: SwipeAction, indexPath: IndexPath, deleteAction: @escaping () -> Void) {
-        
         // Initialize the contextual action with the style, title, and handler.
-        self.init(style: actionConfig.style, title: actionConfig.title, handler: {
-            (contextualAction, view, completionHandler) in
-            
+        self.init(style: actionConfig.style, title: actionConfig.title, handler: { (_, _, completionHandler) in
             // If the action's style is destructive, execute the delete logic and the custom handler.
             if actionConfig.style == .destructive {
                 actionConfig.handler(indexPath)
@@ -34,14 +30,11 @@ extension UIContextualAction {
                 // For non-destructive actions, just execute the handler.
                 actionConfig.handler(indexPath)
             }
-            
             // Complete the action.
             completionHandler(true)
         })
-        
         // Set the icon for the action if provided.
         self.image = actionConfig.icon
-        
         // Set the background color for the action if provided.
         if let color = actionConfig.background {
             self.backgroundColor = color

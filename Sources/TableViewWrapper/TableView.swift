@@ -47,75 +47,52 @@ where Data: RandomAccessCollection & RangeReplaceableCollection,
       TableFooterContent: View,
       SectionHeaderContent: View,
       SectionFooterContent: View {
-    
     // MARK: CollectionView typealiases
     public typealias UIViewControllerType = UITableViewController
     public typealias Section = Data.Element
     public typealias RowData = Section.Element
     public typealias ElementAction = (Data.Element.Element) -> Void
-    
     /// A binding to the data source of the table view.
     @Binding var data: Data
-    
     /// A binding to control whether the table view is in editing mode.
     public var isEditing: Binding<Bool>?
-    
     /// A closure that generates the content view for each cell based on row data.
     public let cellContentForData: (RowData) -> CellContent
-    
     /// A boolean that controls whether scrolling is enabled.
     public let scrollEnabled: Bool
-    
     /// A boolean that controls whether the table view bounces at the edges.
     public let bounces: Bool
-    
     /// The rate at which the table view decelerates when scrolling.
     public let decelerationRate: UIScrollView.DecelerationRate
-    
     /// The separator style for the table view cells.
     public let seperatorStyle: UITableViewCell.SeparatorStyle
-    
     /// The content view displayed in the table header.
     public let header: TableHeaderContent?
-    
     /// The content view displayed in the table footer.
     public let footer: TableFooterContent?
-    
     /// A closure that generates the content for each section header.
     public let sectionHeader: (Int) -> SectionHeaderContent?
-    
     /// A closure that generates the content for each section footer.
     public let sectionFooter: (Int) -> SectionFooterContent?
-    
     /// An optional action triggered when a table item is selected.
     public var selectItemAction: ElementAction?
-    
     /// An array of swipe actions to be displayed when swiping right.
     public var trailingSwipeActions: [SwipeAction]?
-    
     /// An array of swipe actions to be displayed when swiping left.
     public var leadingSwipeActions: [SwipeAction]?
-    
     /// A closure that determines if a row can be moved (reordered).
     public var canMoveRowAt: ((IndexPath) -> Bool)?
-    
     /// A closure to handle reordering actions.
     public var onReorder: (() -> Void)?
-    
     /// A closure that is called when the table view is scrolled.
-    public var didScroll: ((_ offset: CGFloat) -> ())?
-    
+    public var didScroll: ((_ offset: CGFloat) -> Void)?
     /// A closure that is called when the table view reaches the top.
     public var didScrollToTop: (() -> Void)?
-    
     /// A closure that is called when the table view starts dragging.
     public var beginDragging: (() -> Void)?
-    
     /// A closure that is called when the table view ends dragging.
     public var endDraging: ((_ willDecelerate: Bool) -> Void)?
-    
     // MARK: - TableView Lifecycle
-    
     /// Creates and configures the underlying UITableViewController.
     public func makeUIViewController(context: Context) -> UITableViewController {
         let controller = UITableViewController()
@@ -131,7 +108,6 @@ where Data: RandomAccessCollection & RangeReplaceableCollection,
         setupFooter(for: controller)
         return controller
     }
-    
     /// Configures the header for the table view.
     private func setupHeader(for tableViewController: UITableViewController) {
         if let headerView = header {
@@ -150,7 +126,6 @@ where Data: RandomAccessCollection & RangeReplaceableCollection,
             hostingController.didMove(toParent: tableViewController)
         }
     }
-    
     /// Configures the footer for the table view.
     private func setupFooter(for tableViewController: UITableViewController) {
         if let footerView = footer {
@@ -175,22 +150,19 @@ where Data: RandomAccessCollection & RangeReplaceableCollection,
         if let isEditing {
             uiViewController.tableView.setEditing(isEditing.wrappedValue, animated: true)
         }
-        if let oldCount = context.coordinator.oldData?.flatMap({ $0 }).count {
-            if oldCount <= data.flatMap({ $0 }).count {
-                DispatchQueue.main.async {
-                    uiViewController.tableView.reloadData()
-                }
+        if !context.coordinator.rowDeleted {
+            DispatchQueue.main.async {
+                uiViewController.tableView.reloadData()
             }
+        } else {
+            context.coordinator.rowDeleted = false
         }
     }
-    
     /// Creates the coordinator to manage the data binding and interactions.
     public func makeCoordinator() -> Coordinator {
         Coordinator(view: self, data: $data)
     }
-    
     // MARK: - Initializer
-        
     /// Initializes the `TableView` with the provided parameters.
     public init(data: Binding<Data>,
                 @ViewBuilder cellContentForData: @escaping (RowData) -> CellContent,
@@ -217,5 +189,3 @@ where Data: RandomAccessCollection & RangeReplaceableCollection,
         self.sectionFooter = sectionFooter
     }
 }
-
-
