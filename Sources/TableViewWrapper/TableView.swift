@@ -148,7 +148,9 @@ where Data: RandomAccessCollection & RangeReplaceableCollection,
     /// Updates the `UITableViewController` when the data changes.
     public func updateUIViewController(_ uiViewController: UITableViewController, context: Context) {
         if let isEditing {
-            uiViewController.tableView.setEditing(isEditing.wrappedValue, animated: true)
+            if uiViewController.tableView.isEditing != isEditing.wrappedValue && !context.coordinator.rowDeleted {
+                uiViewController.tableView.setEditing(isEditing.wrappedValue, animated: true)
+            }
         }
         if !context.coordinator.rowDeleted {
             DispatchQueue.main.async {
